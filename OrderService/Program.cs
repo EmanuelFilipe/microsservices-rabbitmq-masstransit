@@ -1,11 +1,34 @@
+using MassTransit;
+using SharedMessages.Messages;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+builder.Services.AddMassTransit((x) =>
+{
+    // especificando para o MassTransit a usar o RabbitMQ como o broker de mensagens
+    x.UsingRabbitMq((MT_context, RMQ_cfg) =>
+    {
+        // especificando a URL do RabbitMQ, que está rodando localmente
+        RMQ_cfg.Host("rabbitmq://localhost");
+    });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.MapPost("/orders", async (OrderRequest order, IBus bus) =>
+{
+    var orderPlacedMessages = new OrderPlaced(order.orderId, order.quantity);
+
+    // publicando a mensagem OrderPlaced no RabbitMQ
+    await bus.Publish(orderPlacedMessages);
+    
+    return Results.Created($"/orders/{order.orderId}", orderPlacedMessages);
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -16,29 +39,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
 app.Run();
 
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+public record OrderRequest(Guid orderId, int quantity);
