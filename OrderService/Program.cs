@@ -19,14 +19,13 @@ builder.Services.AddMassTransit((x) =>
         RMQ_cfg.Message<OrderPlaced>(x => x.SetEntityName("order-placed-exchange"));
 
         // especificando o tipo de exchange 'DIRECT' que será usado para publicar a mensagem OrderPlaced
-        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = "direct");
+        RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = ExchangeType.Direct);
 
-        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = "fanout");
-        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = ExchangeType.FanOut.ToString());
+        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = ExchangeType.Fanout);
 
-        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = "topic");
+        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = ExchangeType.Topic);
 
-        RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = ExchangeType.Headers);
+        //RMQ_cfg.Publish<OrderPlaced>(x => x.ExchangeType = ExchangeType.Headers);
     });
 });
 builder.Services.AddEndpointsApiExplorer();
@@ -41,12 +40,13 @@ app.MapPost("/orders", async (OrderRequest order, IBus bus) =>
     #region [ USING ROUTING KEY - DIRECT ]
 
     // publicando a mensagem OrderPlaced no RabbitMQ
-    //await bus.Publish(orderPlacedMessage, context =>
-    //{
-    //    // especificando o RoutingKey de acordo com a quantidade de itens do pedido
-    //    var routingKey = order.quantity > 10 ? "order.shipping" : "order.tracking";
-    //    context.SetRoutingKey(routingKey);
-    //});
+    await bus.Publish(orderPlacedMessage, context =>
+    {
+        // especificando o RoutingKey de acordo com a quantidade de itens do pedido
+        //var routingKey = order.quantity > 10 ? "order.shipping" : "order.tracking";
+        var routingKey = "order.created";
+        context.SetRoutingKey(routingKey);
+    });
 
     #endregion
 
