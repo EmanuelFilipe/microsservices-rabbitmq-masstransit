@@ -1,6 +1,6 @@
 using MassTransit;
 using RabbitMQ.Client;
-using ShippingService.Consumers;
+using TrackingService.Consumers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,23 +14,25 @@ builder.Services.AddMassTransit(x =>
         cfg.Host("rabbitmq://localhost");
 
         // especificando o nome da fila que o serviço ShippingService irá consumir
-        cfg.ReceiveEndpoint("shipping-order-queue", e =>
+        cfg.ReceiveEndpoint("tracking-order-placed", e =>
         {
             // especificando o consumidor que irá processar as mensagens recebidas
             e.Consumer<OrderPlacedConsumer>(context);
 
             #region [ USING DIRECT ]
-            // especificando o binding do exchange "order-placed-exchange" para a fila "shipping-order-queue"
+
+            //// especificando o binding do exchange "order-placed-exchange" para a fila "tracking-order-placed"
             //e.Bind("order-placed-exchange", x =>
             //{
-            //    x.RoutingKey = "order.shipping";
+            //    x.RoutingKey = "order.tracking";
             //    x.ExchangeType = "direct";
             //});
+
             #endregion
 
             #region [ USING FANOUT ]
 
-            // especificando o binding do exchange "order-placed-exchange" para a fila "shipping-order-queue"
+            // especificando o binding do exchange "order-placed-exchange" para a fila "tracking-order-placed"
             //e.Bind("order-placed-exchange", x =>
             //{
             //    x.ExchangeType = "fanout";
@@ -40,10 +42,10 @@ builder.Services.AddMassTransit(x =>
 
             #region [ USING TOPIC ]
 
-            //// especificando o binding do exchange "order-placed-exchange" para a fila "shipping-order-queue"
+            // especificando o binding do exchange "order-placed-exchange" para a fila "tracking-order-placed"
             //e.Bind("order-placed-exchange", x =>
             //{
-            //    x.RoutingKey = "order.*";
+            //    x.RoutingKey = "order.#";
             //    x.ExchangeType = "topic";
             //});
 
@@ -51,16 +53,16 @@ builder.Services.AddMassTransit(x =>
 
             #region [ USING HEADERS ]
 
-            // especificando o binding do exchange "order-placed-exchange" para a fila "shipping-order-queue"
+            // especificando o binding do exchange "order-placed-exchange" para a fila "tracking-order-placed"
             e.Bind("order-placed-exchange", x =>
             {
-                x.ExchangeType = ExchangeType.Headers; ;
+                x.ExchangeType = ExchangeType.Headers;
 
                 // * RULES
-                x.SetBindingArgument("departament", "shipping");
-                x.SetBindingArgument("priority", "high");
+                x.SetBindingArgument("departament", "tracking");
+                x.SetBindingArgument("priority", "low");
                 // "all" significa que todas as condições devem ser atendidas para que a mensagem seja roteada para esta fila
-                x.SetBindingArgument("x-match", "all"); 
+                x.SetBindingArgument("x-match", "all");
             });
 
             #endregion
